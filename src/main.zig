@@ -13,16 +13,33 @@ pub fn main(init: std.process.Init) !void {
         .{ null, null, null },
     };
 
+    var stdin_buffer: [1024]u8 = undefined;
+    var stdin_file_reader: Io.File.Reader = .init(.stdin(), io, &stdin_buffer);
+    const stdin_reader = &stdin_file_reader.interface;
+
     var stdout_buffer: [1024]u8 = undefined;
     var stdout_file_writer: Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
     const stdout_writer = &stdout_file_writer.interface;
+
     try stdout_writer.print(
         \\   a b c
         \\ 1 {u}|{u}|{u}
         \\ 2 {u}|{u}|{u}
         \\ 3 {u}|{u}|{u}
+        \\
     , tableToTuple(table));
-    try stdout_writer.print("\n", .{});
+    try stdout_writer.flush();
+
+    const prompt = try stdin_reader.takeDelimiterExclusive('\n');
+
+    try stdout_writer.print("buffer: {s}\n", .{stdin_buffer});
+    try stdout_writer.print("out: {s}\n", .{prompt});
+    try stdout_writer.flush();
+
+    // Doesn't work. Seek point stays on a new line
+    const prompt_new = try stdin_reader.takeDelimiterExclusive('\n');
+    try stdout_writer.print("buffer: {s}\n", .{stdin_buffer});
+    try stdout_writer.print("out: {s}\n", .{prompt_new});
     try stdout_writer.flush();
 }
 

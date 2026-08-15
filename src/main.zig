@@ -1,19 +1,15 @@
 const std = @import("std");
 const Io = std.Io;
 
-const zic_zac_zoe = @import("zic_zac_zoe"); // maybe will be used
+const zic_zac_zoe = @import("zic_zac_zoe");
 
 const Cell = enum { x, o };
 
-// Mayde store move history in a file
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
     var should_game_stop = false;
-    var table: [3][3]?Cell = .{
-        .{ null, null, null },
-        .{ null, .x, null },
-        .{ null, null, null },
-    };
+    const error_msg = "Invalid move, please try again.";
+    var table: [3][3]?Cell = @splat(@splat(null));
 
     var stdin_buffer: [1024]u8 = undefined;
     var stdin_file_reader: Io.File.Reader = .init(.stdin(), io, &stdin_buffer);
@@ -23,7 +19,9 @@ pub fn main(init: std.process.Init) !void {
     var stdout_file_writer: Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
     const stdout_writer = &stdout_file_writer.interface;
 
-    while (!should_game_stop) {
+    outer: while (!should_game_stop) {
+        try stdout_writer.flush(); // for error messages
+
         try stdout_writer.print(
             \\   a b c
             \\ 1 {u}|{u}|{u}
@@ -42,7 +40,8 @@ pub fn main(init: std.process.Init) !void {
 
         for (move, 0..) |char, index| {
             if (index > 2) {
-                unreachable;
+                try stdout_writer.print("{s}\n", .{error_msg});
+                continue :outer;
             }
 
             if (char >= 'a' and char <= 'c') {
@@ -54,20 +53,84 @@ pub fn main(init: std.process.Init) !void {
             } else if (char == 'o') {
                 cell = .o;
             } else {
-                unreachable;
+                try stdout_writer.print("{s}\n", .{error_msg});
+                continue :outer;
             }
         }
 
         if (table[column][row] == null) {
             table[column][row] = cell;
         } else {
-            try stdout_writer.print("You can't make this move\n", .{});
-            try stdout_writer.flush();
+            try stdout_writer.print("{s}\n", .{error_msg});
+            continue :outer;
         }
 
-        // TODO: Check the table for possible win
-        should_game_stop = true;
+        const winner = checkForWin(table);
+
+        if (winner != null) {
+            var char: u8 = undefined;
+            switch (winner.?) {
+                .x => {
+                    char = 'X';
+                },
+                .o => {
+                    char = 'O';
+                },
+            }
+            try stdout_writer.print("{c} is winner!\n", .{char});
+            should_game_stop = true;
+        } else {
+            if (!areThereEmptyCells(table)) {
+                try stdout_writer.print("Draw!\n", .{});
+                should_game_stop = true;
+            }
+        }
     }
+
+    try stdout_writer.print(
+        \\   a b c
+        \\ 1 {u}|{u}|{u}
+        \\ 2 {u}|{u}|{u}
+        \\ 3 {u}|{u}|{u}
+        \\
+    , tableToTuple(table));
+    try stdout_writer.flush();
+}
+
+fn areThereEmptyCells(table: [3][3]?Cell) bool {
+    for (table) |row| {
+        for (row) |cell| {
+            if (cell == null) return true;
+        }
+    }
+
+    return false;
+}
+
+fn checkForWin(table: [3][3]?Cell) ?Cell {
+    // Check for vertical match
+    for (0..3) |i| {
+        if (table[i][0] == table[i][1] and table[i][1] == table[i][2] and table[i][0] != null) {
+            return table[i][0];
+        }
+    }
+
+    // Check for horizontal match
+    for (0..3) |i| {
+        if (table[0][i] == table[1][i] and table[1][i] == table[2][i] and table[0][i] != null) {
+            return table[0][i];
+        }
+    }
+
+    // Check for diagonal match
+    if (table[0][0] == table[1][1] and table[1][1] == table[2][2] and table[0][0] != null) {
+        return table[0][0];
+    }
+    if (table[0][2] == table[1][1] and table[1][1] == table[2][0] and table[0][2] != null) {
+        return table[0][2];
+    }
+
+    return null;
 }
 
 fn tableToTuple(table: [3][3]?Cell) struct { u8, u8, u8, u8, u8, u8, u8, u8, u8 } {

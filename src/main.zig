@@ -5,9 +5,11 @@ const zic_zac_zoe = @import("zic_zac_zoe"); // maybe will be used
 
 const Cell = enum { x, o };
 
+// Mayde store move history in a file
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
-    const table: [3][3]?Cell = .{
+    var should_game_stop = false;
+    var table: [3][3]?Cell = .{
         .{ null, null, null },
         .{ null, .x, null },
         .{ null, null, null },
@@ -21,26 +23,50 @@ pub fn main(init: std.process.Init) !void {
     var stdout_file_writer: Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
     const stdout_writer = &stdout_file_writer.interface;
 
-    try stdout_writer.print(
-        \\   a b c
-        \\ 1 {u}|{u}|{u}
-        \\ 2 {u}|{u}|{u}
-        \\ 3 {u}|{u}|{u}
-        \\
-    , tableToTuple(table));
-    try stdout_writer.flush();
+    while (!should_game_stop) {
+        try stdout_writer.print(
+            \\   a b c
+            \\ 1 {u}|{u}|{u}
+            \\ 2 {u}|{u}|{u}
+            \\ 3 {u}|{u}|{u}
+            \\
+        , tableToTuple(table));
 
-    const prompt = try stdin_reader.takeDelimiterExclusive('\n');
+        try stdout_writer.print("Your move: ", .{});
+        try stdout_writer.flush();
 
-    try stdout_writer.print("buffer: {s}\n", .{stdin_buffer});
-    try stdout_writer.print("out: {s}\n", .{prompt});
-    try stdout_writer.flush();
+        const move = try stdin_reader.takeDelimiter('\n') orelse "meow";
+        var column: u8 = undefined;
+        var row: u8 = undefined;
+        var cell: Cell = undefined;
 
-    // Doesn't work. Seek point stays on a new line
-    const prompt_new = try stdin_reader.takeDelimiterExclusive('\n');
-    try stdout_writer.print("buffer: {s}\n", .{stdin_buffer});
-    try stdout_writer.print("out: {s}\n", .{prompt_new});
-    try stdout_writer.flush();
+        for (move, 0..) |char, index| {
+            if (index > 2) {
+                unreachable;
+            }
+
+            if (char >= 'a' and char <= 'c') {
+                column = char - 'a';
+            } else if (char >= '1' and char <= '3') {
+                row = char - '1';
+            } else if (char == 'x') {
+                cell = .x;
+            } else if (char == 'o') {
+                cell = .o;
+            } else {
+                unreachable;
+            }
+        }
+
+        if (table[column][row] == null) {
+            table[column][row] = cell;
+        } else {
+            try stdout_writer.print("You can't make this move\n", .{});
+            try stdout_writer.flush();
+        }
+
+        should_game_stop = true;
+    }
 }
 
 fn tableToTuple(table: [3][3]?Cell) struct { u8, u8, u8, u8, u8, u8, u8, u8, u8 } {

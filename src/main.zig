@@ -35,7 +35,7 @@ pub fn main(init: std.process.Init) !void {
         try stdout_writer.print("Your move: ", .{});
         try stdout_writer.flush();
 
-        const move = try stdin_reader.takeDelimiter('\n') orelse "meow";
+        const move = try stdin_reader.takeDelimiter('\n') orelse unreachable;
         var column: u8 = undefined;
         var row: u8 = undefined;
         var cell: Cell = undefined;
@@ -46,9 +46,9 @@ pub fn main(init: std.process.Init) !void {
             }
 
             if (char >= 'a' and char <= 'c') {
-                column = char - 'a';
+                row = char - 'a';
             } else if (char >= '1' and char <= '3') {
-                row = char - '1';
+                column = char - '1';
             } else if (char == 'x') {
                 cell = .x;
             } else if (char == 'o') {
@@ -65,6 +65,7 @@ pub fn main(init: std.process.Init) !void {
             try stdout_writer.flush();
         }
 
+        // TODO: Check the table for possible win
         should_game_stop = true;
     }
 }

@@ -44,17 +44,15 @@ pub fn main(init: std.process.Init) !void {
                 continue :outer;
             }
 
-            if (char >= 'a' and char <= 'c') {
-                row = char - 'a';
-            } else if (char >= '1' and char <= '3') {
-                column = char - '1';
-            } else if (char == 'x') {
-                cell = .x;
-            } else if (char == 'o') {
-                cell = .o;
-            } else {
-                try stdout_writer.print("{s}\n", .{error_msg});
-                continue :outer;
+            switch (char) {
+                'a'...'c' => row = char - 'a',
+                '1'...'3' => column = char - '1',
+                'x' => cell = .x,
+                'o' => cell = .o,
+                else => {
+                    try stdout_writer.print("{s}\n", .{error_msg});
+                    continue :outer;
+                },
             }
         }
 
@@ -77,7 +75,7 @@ pub fn main(init: std.process.Init) !void {
                     char = 'O';
                 },
             }
-            try stdout_writer.print("{c} is winner!\n", .{char});
+            try stdout_writer.print("Winner is {c}!\n", .{char});
             should_game_stop = true;
         } else {
             if (!areThereEmptyCells(table)) {

@@ -24,9 +24,9 @@ pub fn main(init: std.process.Init) !void {
 
         try stdout_writer.print(
             \\   a b c
-            \\ 1 {u}|{u}|{u}
-            \\ 2 {u}|{u}|{u}
-            \\ 3 {u}|{u}|{u}
+            \\ 1 {c}|{c}|{c}
+            \\ 2 {c}|{c}|{c}
+            \\ 3 {c}|{c}|{c}
             \\
         , tableToTuple(table));
 
@@ -63,18 +63,13 @@ pub fn main(init: std.process.Init) !void {
             continue :outer;
         }
 
-        const winner = checkForWin(table);
+        const optional_winner = checkForWin(table);
 
-        if (winner != null) {
-            var char: u8 = undefined;
-            switch (winner.?) {
-                .x => {
-                    char = 'X';
-                },
-                .o => {
-                    char = 'O';
-                },
-            }
+        if (optional_winner) |winner| {
+            const char = switch (winner) {
+                .x => 'X',
+                .o => 'O',
+            };
             try stdout_writer.print("Winner is {c}!\n", .{char});
             should_game_stop = true;
         } else {
@@ -87,9 +82,9 @@ pub fn main(init: std.process.Init) !void {
 
     try stdout_writer.print(
         \\   a b c
-        \\ 1 {u}|{u}|{u}
-        \\ 2 {u}|{u}|{u}
-        \\ 3 {u}|{u}|{u}
+        \\ 1 {c}|{c}|{c}
+        \\ 2 {c}|{c}|{c}
+        \\ 3 {c}|{c}|{c}
         \\
     , tableToTuple(table));
     try stdout_writer.flush();
